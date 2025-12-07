@@ -12,4 +12,6 @@ surfPaperPluginApi {
 
 dependencies {
     api(project(":surf-nametag-api"))
+    compileOnly("net.luckperms:api:5.4")
+    compileOnly("io.github.miniplaceholders:miniplaceholders-api:3.0.1")
 }

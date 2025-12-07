@@ -1,21 +1,11 @@
 package dev.slne.surf.nametag.paper.service
 
+import dev.slne.surf.nametag.api.NametagLine
+import dev.slne.surf.surfapi.core.api.util.mutableObjectListOf
 import dev.slne.surf.surfapi.core.api.util.requiredService
-import net.kyori.adventure.text.Component
-import java.util.UUID
 
 class NametagService {
-    fun setNametag(playerUuid: UUID, nametag: String) {
-
-    }
-
-    fun setNametag(playerUuid: UUID, nametag: Component) {
-
-    }
-
-    fun clearNametag(playerUuid: UUID) {
-
-    }
+    val nametags = mutableObjectListOf<NametagLine>()
 
     companion object {
         val INSTANCE = requiredService<NametagService>()
