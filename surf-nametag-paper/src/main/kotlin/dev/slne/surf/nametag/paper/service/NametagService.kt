@@ -4,6 +4,8 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTe
 import dev.slne.surf.nametag.paper.hook.LuckPermsHook
 import dev.slne.surf.nametag.paper.util.sendPacket
 import dev.slne.surf.surfapi.bukkit.api.util.forEachPlayer
+import dev.slne.surf.surfapi.core.api.util.mutableObject2ObjectMapOf
+import dev.slne.surf.surfapi.core.api.util.mutableObjectSetOf
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
@@ -14,19 +16,18 @@ class NametagService {
     private val mm = MiniMessage.miniMessage()
     private fun teamName(player: UUID) = "surf_nametag_$player"
 
-    private val prefixOverrides = mutableMapOf<Pair<UUID, UUID>, Component>()
-    private val suffixOverrides = mutableMapOf<Pair<UUID, UUID>, Component>()
+    private val prefixOverrides = mutableObject2ObjectMapOf<Pair<UUID, UUID>, Component>()
+    private val suffixOverrides = mutableObject2ObjectMapOf<Pair<UUID, UUID>, Component>()
+    private val createdTeams = mutableObjectSetOf<Pair<UUID, UUID>>()
 
     fun handleJoin(joined: Player) {
         val joinedId = joined.uniqueId
 
         forEachPlayer {
             val otherId = it.uniqueId
-
             showNametag(joinedId, otherId)
             resetPrefix(joinedId, otherId)
             resetSuffix(joinedId, otherId)
-
             showNametag(otherId, joinedId)
             resetPrefix(otherId, joinedId)
             resetSuffix(otherId, joinedId)
@@ -38,26 +39,22 @@ class NametagService {
 
         forEachPlayer {
             val viewerId = it.uniqueId
-
             showNametag(playerId, viewerId)
             applyOverridesOrFallback(playerId, viewerId)
         }
     }
 
-    fun showNametag(player: UUID, viewer: UUID) {
-        updateTeam(player, viewer) { old ->
-            cloneWith(old, visibility = WrapperPlayServerTeams.NameTagVisibility.ALWAYS)
-        }
+    fun showNametag(player: UUID, viewer: UUID) = updateTeam(player, viewer) { old ->
+        cloneWith(old, visibility = WrapperPlayServerTeams.NameTagVisibility.ALWAYS)
     }
 
-    fun hideNametag(player: UUID, viewer: UUID) {
-        updateTeam(player, viewer) { old ->
-            cloneWith(old, visibility = WrapperPlayServerTeams.NameTagVisibility.NEVER)
-        }
+    fun hideNametag(player: UUID, viewer: UUID) = updateTeam(player, viewer) { old ->
+        cloneWith(old, visibility = WrapperPlayServerTeams.NameTagVisibility.NEVER)
     }
 
     fun setPrefix(player: UUID, viewer: UUID, prefix: Component) {
         prefixOverrides[player to viewer] = prefix
+
         updateTeam(player, viewer) { old ->
             cloneWith(old, prefix = prefix)
         }
@@ -65,14 +62,15 @@ class NametagService {
 
     fun setSuffix(player: UUID, viewer: UUID, suffix: Component) {
         suffixOverrides[player to viewer] = suffix
+
         updateTeam(player, viewer) { old ->
             cloneWith(old, suffix = suffix)
         }
     }
 
     fun resetPrefix(player: UUID, viewer: UUID) {
-        prefixOverrides.remove(player to viewer)
         val lpPrefix = mm.deserialize(LuckPermsHook.getPrefix(player))
+        prefixOverrides.remove(player to viewer)
 
         updateTeam(player, viewer) { old ->
             cloneWith(old, prefix = lpPrefix)
@@ -80,8 +78,8 @@ class NametagService {
     }
 
     fun resetSuffix(player: UUID, viewer: UUID) {
-        suffixOverrides.remove(player to viewer)
         val lpSuffix = mm.deserialize(LuckPermsHook.getSuffix(player))
+        suffixOverrides.remove(player to viewer)
 
         updateTeam(player, viewer) { old ->
             cloneWith(old, suffix = lpSuffix)
@@ -89,12 +87,10 @@ class NametagService {
     }
 
     private fun applyOverridesOrFallback(player: UUID, viewer: UUID) {
-        val prefix = prefixOverrides[player to viewer]
-            ?: mm.deserialize(LuckPermsHook.getPrefix(player))
-
-        val suffix = suffixOverrides[player to viewer]
-            ?: mm.deserialize(LuckPermsHook.getSuffix(player))
-
+        val prefix =
+            prefixOverrides[player to viewer] ?: mm.deserialize(LuckPermsHook.getPrefix(player))
+        val suffix =
+            suffixOverrides[player to viewer] ?: mm.deserialize(LuckPermsHook.getSuffix(player))
         updateTeam(player, viewer) { old ->
             cloneWith(old, prefix = prefix, suffix = suffix)
         }
@@ -108,6 +104,7 @@ class NametagService {
         val vwr = Bukkit.getPlayer(viewer) ?: return
         val plr = Bukkit.getPlayer(player) ?: return
         val team = teamName(player)
+        val key = player to viewer
 
         val baseInfo = WrapperPlayServerTeams.ScoreBoardTeamInfo(
             Component.text(team),
@@ -121,20 +118,14 @@ class NametagService {
 
         val newInfo = modifier(baseInfo)
 
-        val packetCreate = WrapperPlayServerTeams(
-            team,
-            WrapperPlayServerTeams.TeamMode.CREATE,
-            newInfo,
-            plr.name
-        )
+        val packet = if (key in createdTeams) {
+            WrapperPlayServerTeams(team, WrapperPlayServerTeams.TeamMode.UPDATE, newInfo)
+        } else {
+            createdTeams += key
+            WrapperPlayServerTeams(team, WrapperPlayServerTeams.TeamMode.CREATE, newInfo, plr.name)
+        }
 
-        val packetUpdate = WrapperPlayServerTeams(
-            team,
-            WrapperPlayServerTeams.TeamMode.UPDATE,
-            newInfo
-        )
-
-        vwr.sendPacket(packetCreate, packetUpdate)
+        vwr.sendPacket(packet)
     }
 
     private fun cloneWith(
