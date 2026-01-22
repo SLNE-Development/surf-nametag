@@ -144,10 +144,6 @@ class NametagService {
             original.optionData
         )
     }
-
-    companion object {
-        val INSTANCE = NametagService()
-    }
 }
 
-val nametagService get() = NametagService.INSTANCE
+val nametagService get() = NametagService()
