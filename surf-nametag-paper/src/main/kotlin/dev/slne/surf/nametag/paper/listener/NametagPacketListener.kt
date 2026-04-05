@@ -10,6 +10,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSp
 import dev.slne.surf.nametag.paper.service.nametagService
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
+import kotlin.jvm.optionals.getOrNull
 
 object NametagPacketListener : PacketListenerAbstract(PacketListenerPriority.HIGH) {
     override fun onPacketSend(event: PacketSendEvent) {
@@ -37,7 +38,9 @@ object NametagPacketListener : PacketListenerAbstract(PacketListenerPriority.HIG
     private fun handleSpawnEntity(event: PacketSendEvent) {
         val viewer = event.getPlayer() as? Player ?: return
         val wrapper = WrapperPlayServerSpawnEntity(event)
-        val spawnedPlayer = Bukkit.getPlayer(wrapper.entityUUID) ?: return
+
+        val uuid = wrapper.uuid.getOrNull() ?: return
+        val spawnedPlayer = Bukkit.getPlayer(uuid) ?: return
 
         nametagService.ensureTeamMembership(viewer, spawnedPlayer.name)
         nametagService.handlePlayerTracked(spawnedPlayer, viewer)
