@@ -17,7 +17,6 @@ import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
-import org.bukkit.scoreboard.Team
 import java.util.*
 
 class NametagService {
@@ -29,30 +28,20 @@ class NametagService {
     private val nametagOverrides = mutableObject2ObjectMapOf<Pair<UUID, UUID>, Component>()
     private val hiddenNametags = mutableObjectSetOf<Pair<UUID, UUID>>()
     private val spawnedDisplays = mutableObjectSetOf<Pair<UUID, UUID>>()
-
-    private lateinit var team: Team
+    private val teamCreatedFor = mutableObjectSetOf<UUID>()
 
     private fun getOrCreateEntityId(player: UUID): Int =
         entityIds.getOrPut(player) { random.nextInt() }
 
-    fun initTeam() {
-        val scoreboard = Bukkit.getScoreboardManager().mainScoreboard
-        team = scoreboard.getTeam(TEAM_NAME) ?: scoreboard.registerNewTeam(TEAM_NAME)
-        team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER)
-
-        forEachPlayer { team.addEntry(it.name) }
-    }
-
-    fun cleanupTeam() {
-        if (::team.isInitialized) {
-            team.unregister()
-        }
-    }
-
     fun handleJoin(joined: Player) {
         val joinedId = joined.uniqueId
 
-        team.addEntry(joined.name)
+        sendTeamCreate(joined)
+
+        forEachPlayer { viewer ->
+            if (viewer.uniqueId == joinedId) return@forEachPlayer
+            sendTeamAddMember(viewer, joined.name)
+        }
 
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {
             if (!joined.isOnline) return@Runnable
@@ -85,18 +74,11 @@ class NametagService {
                     spawnedDisplays.remove(key)
                 }
             }
+
+            sendTeamRemoveMember(viewer, player.name)
         }
 
-        team.removeEntry(player.name)
         cleanupPlayerState(playerId)
-    }
-
-    fun getVirtualPassengerId(vehicleEntityId: Int, viewerUuid: UUID): Int? {
-        val player = Bukkit.getOnlinePlayers().find { it.entityId == vehicleEntityId }
-            ?: return null
-        val key = player.uniqueId to viewerUuid
-        if (key !in spawnedDisplays) return null
-        return entityIds[player.uniqueId]
     }
 
     fun handleDataUpdate(player: Player) {
@@ -282,12 +264,65 @@ class NametagService {
         return WrapperPlayServerEntityMetadata(entityId, metadata)
     }
 
+    private fun sendTeamCreate(viewer: Player) {
+        val members = mutableListOf<String>()
+        forEachPlayer { members.add(it.name) }
+
+        val teamInfo = WrapperPlayServerTeams.ScoreBoardTeamInfo(
+            Component.empty(),
+            Component.empty(),
+            Component.empty(),
+            WrapperPlayServerTeams.NameTagVisibility.NEVER,
+            WrapperPlayServerTeams.CollisionRule.ALWAYS,
+            null,
+            WrapperPlayServerTeams.OptionData.NONE
+        )
+
+        viewer.sendPacket(
+            WrapperPlayServerTeams(
+                TEAM_NAME,
+                WrapperPlayServerTeams.TeamMode.CREATE,
+                teamInfo,
+                members
+            )
+        )
+
+        teamCreatedFor.add(viewer.uniqueId)
+    }
+
+    private fun sendTeamAddMember(viewer: Player, memberName: String) {
+        if (viewer.uniqueId !in teamCreatedFor) return
+
+        viewer.sendPacket(
+            WrapperPlayServerTeams(
+                TEAM_NAME,
+                WrapperPlayServerTeams.TeamMode.ADD_ENTITIES,
+                null as WrapperPlayServerTeams.ScoreBoardTeamInfo?,
+                memberName
+            )
+        )
+    }
+
+    private fun sendTeamRemoveMember(viewer: Player, memberName: String) {
+        if (viewer.uniqueId !in teamCreatedFor) return
+
+        viewer.sendPacket(
+            WrapperPlayServerTeams(
+                TEAM_NAME,
+                WrapperPlayServerTeams.TeamMode.REMOVE_ENTITIES,
+                null as WrapperPlayServerTeams.ScoreBoardTeamInfo?,
+                memberName
+            )
+        )
+    }
+
     private fun cleanupPlayerState(playerId: UUID) {
         prefixOverrides.keys.removeIf { it.first == playerId || it.second == playerId }
         suffixOverrides.keys.removeIf { it.first == playerId || it.second == playerId }
         nametagOverrides.keys.removeIf { it.first == playerId || it.second == playerId }
         hiddenNametags.removeIf { it.first == playerId || it.second == playerId }
         spawnedDisplays.removeIf { it.first == playerId || it.second == playerId }
+        teamCreatedFor.remove(playerId)
     }
 
     companion object {
