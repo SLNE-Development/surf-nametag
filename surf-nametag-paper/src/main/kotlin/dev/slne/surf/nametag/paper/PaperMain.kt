@@ -12,6 +12,8 @@ class PaperMain : SuspendingJavaPlugin() {
     override fun onEnable() {
         NametagListener.register()
 
-        LuckPermsHook.load()
+        if (LuckPermsHook.isEnabled()) {
+            LuckPermsHook.load()
+        }
     }
 }
