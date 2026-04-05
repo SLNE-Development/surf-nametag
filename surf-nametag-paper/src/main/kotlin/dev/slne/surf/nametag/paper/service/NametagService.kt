@@ -3,23 +3,21 @@ package dev.slne.surf.nametag.paper.service
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData
 import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDestroyEntities
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSetPassengers
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSpawnEntity
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTeams
+import com.github.retrooper.packetevents.util.Vector3f
+import com.github.retrooper.packetevents.wrapper.play.server.*
 import dev.slne.surf.nametag.paper.hook.LuckPermsHook
 import dev.slne.surf.nametag.paper.plugin
 import dev.slne.surf.nametag.paper.util.sendPacket
 import dev.slne.surf.surfapi.bukkit.api.util.forEachPlayer
 import dev.slne.surf.surfapi.core.api.util.mutableObject2ObjectMapOf
 import dev.slne.surf.surfapi.core.api.util.mutableObjectSetOf
+import dev.slne.surf.surfapi.core.api.util.random
+import io.github.retrooper.packetevents.util.SpigotConversionUtil
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 
 class NametagService {
     private val mm = MiniMessage.miniMessage()
@@ -33,9 +31,7 @@ class NametagService {
     private val teamCreatedFor = mutableObjectSetOf<UUID>()
 
     private fun getOrCreateEntityId(player: UUID): Int =
-        entityIds.getOrPut(player) { ENTITY_ID_COUNTER.getAndDecrement() }
-
-    // --- Join / Quit ---
+        entityIds.getOrPut(player) { random.nextInt() }
 
     fun handleJoin(joined: Player) {
         val joinedId = joined.uniqueId
@@ -97,8 +93,6 @@ class NametagService {
         }
     }
 
-    // --- API: Visibility ---
-
     fun showNametag(player: UUID, viewer: UUID) {
         val key = player to viewer
         if (key !in hiddenNametags) return
@@ -123,8 +117,6 @@ class NametagService {
         }
     }
 
-    // --- API: Full Nametag Override ---
-
     fun setNametag(player: UUID, viewer: UUID, nametag: Component) {
         nametagOverrides[player to viewer] = nametag
 
@@ -146,8 +138,6 @@ class NametagService {
             updateTextDisplayMetadata(player, vwr)
         }
     }
-
-    // --- API: Prefix / Suffix ---
 
     fun setPrefix(player: UUID, viewer: UUID, prefix: Component) {
         prefixOverrides[player to viewer] = prefix
@@ -189,8 +179,6 @@ class NametagService {
         }
     }
 
-    // --- Internal: Text Display Management ---
-
     private fun buildNametagText(player: UUID, viewer: UUID): Component {
         nametagOverrides[player to viewer]?.let { return it }
 
@@ -224,13 +212,9 @@ class NametagService {
 
         val spawnPacket = WrapperPlayServerSpawnEntity(
             entityId,
-            UUID.nameUUIDFromBytes("surf-nametag-$playerId".toByteArray()),
+            UUID.randomUUID(),
             EntityTypes.TEXT_DISPLAY,
-            com.github.retrooper.packetevents.util.Vector3d(
-                location.x, location.y, location.z
-            ),
-            0f,
-            0f,
+            SpigotConversionUtil.fromBukkitLocation(location),
             0f,
             0,
             null
@@ -264,11 +248,11 @@ class NametagService {
             EntityData(BILLBOARD_INDEX, EntityDataTypes.BYTE, CENTER_BILLBOARD),
             EntityData(
                 TRANSLATION_INDEX, EntityDataTypes.VECTOR3F,
-                com.github.retrooper.packetevents.util.Vector3f(0f, NAMETAG_Y_OFFSET, 0f)
+                Vector3f(0f, NAMETAG_Y_OFFSET, 0f)
             ),
             EntityData(
                 SCALE_INDEX, EntityDataTypes.VECTOR3F,
-                com.github.retrooper.packetevents.util.Vector3f(1f, 1f, 1f)
+                Vector3f(1f, 1f, 1f)
             ),
             EntityData(TEXT_INDEX, EntityDataTypes.ADV_COMPONENT, nametagText),
             EntityData(BACKGROUND_COLOR_INDEX, EntityDataTypes.INT, TRANSPARENT_BACKGROUND),
@@ -279,8 +263,6 @@ class NametagService {
 
         return WrapperPlayServerEntityMetadata(entityId, metadata)
     }
-
-    // --- Internal: Team Management (hide vanilla nametags) ---
 
     private fun sendTeamCreate(viewer: Player) {
         val members = mutableListOf<String>()
@@ -334,8 +316,6 @@ class NametagService {
         )
     }
 
-    // --- Internal: Cleanup ---
-
     private fun cleanupPlayerState(playerId: UUID) {
         prefixOverrides.keys.removeIf { it.first == playerId || it.second == playerId }
         suffixOverrides.keys.removeIf { it.first == playerId || it.second == playerId }
@@ -347,9 +327,7 @@ class NametagService {
 
     companion object {
         private const val TEAM_NAME = "surf_no_nametag"
-        private val ENTITY_ID_COUNTER = AtomicInteger(-1)
 
-        // Display entity metadata indices (MC 1.21.x)
         private const val TRANSLATION_INDEX = 11
         private const val SCALE_INDEX = 12
         private const val BILLBOARD_INDEX = 15
@@ -357,7 +335,6 @@ class NametagService {
         private const val SHADOW_RADIUS_INDEX = 18
         private const val SHADOW_STRENGTH_INDEX = 19
 
-        // Text Display metadata indices (MC 1.21.x)
         private const val TEXT_INDEX = 23
         private const val BACKGROUND_COLOR_INDEX = 25
 
