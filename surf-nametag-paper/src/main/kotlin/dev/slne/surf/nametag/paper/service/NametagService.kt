@@ -96,6 +96,30 @@ class NametagService {
         sendTeamAddMember(viewer, memberName)
     }
 
+    fun handlePlayerTracked(player: Player, viewer: Player) {
+        val playerId = player.uniqueId
+        val viewerId = viewer.uniqueId
+        if (playerId == viewerId) return
+
+        Bukkit.getScheduler().runTaskLater(plugin, Runnable {
+            if (!player.isOnline || !viewer.isOnline) return@Runnable
+            val key = playerId to viewerId
+            if (key !in hiddenNametags) {
+                spawnTextDisplay(player, viewer)
+            }
+        }, 2L)
+    }
+
+    fun handlePlayerUntracked(playerEntityId: Int, viewer: Player) {
+        val player = Bukkit.getOnlinePlayers().find { it.entityId == playerEntityId } ?: return
+        val key = player.uniqueId to viewer.uniqueId
+        if (key in spawnedDisplays) {
+            spawnedDisplays.remove(key)
+            val textDisplayEntityId = entityIds[player.uniqueId] ?: return
+            viewer.sendPacket(WrapperPlayServerDestroyEntities(textDisplayEntityId))
+        }
+    }
+
     fun handleDataUpdate(player: Player) {
         val playerId = player.uniqueId
 
