@@ -224,7 +224,7 @@ class NametagService {
 
         val spawnPacket = WrapperPlayServerSpawnEntity(
             entityId,
-            UUID.randomUUID(),
+            UUID.nameUUIDFromBytes("surf-nametag-$playerId".toByteArray()),
             EntityTypes.TEXT_DISPLAY,
             com.github.retrooper.packetevents.util.Vector3d(
                 location.x, location.y, location.z
@@ -347,7 +347,7 @@ class NametagService {
 
     companion object {
         private const val TEAM_NAME = "surf_no_nametag"
-        private val ENTITY_ID_COUNTER = AtomicInteger(Int.MAX_VALUE / 2)
+        private val ENTITY_ID_COUNTER = AtomicInteger(-1)
 
         // Display entity metadata indices (MC 1.21.x)
         private const val TRANSLATION_INDEX = 11
