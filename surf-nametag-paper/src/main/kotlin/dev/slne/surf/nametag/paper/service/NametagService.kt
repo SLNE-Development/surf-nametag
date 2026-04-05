@@ -81,6 +81,21 @@ class NametagService {
         cleanupPlayerState(playerId)
     }
 
+    fun getVirtualPassengerId(vehicleEntityId: Int, viewerUuid: UUID): Int? {
+        val player = Bukkit.getOnlinePlayers().find { it.entityId == vehicleEntityId }
+            ?: return null
+        val key = player.uniqueId to viewerUuid
+        if (key !in spawnedDisplays) return null
+        return entityIds[player.uniqueId]
+    }
+
+    fun ensureTeamMembership(viewer: Player, memberName: String) {
+        if (viewer.uniqueId !in teamCreatedFor) {
+            sendTeamCreate(viewer)
+        }
+        sendTeamAddMember(viewer, memberName)
+    }
+
     fun handleDataUpdate(player: Player) {
         val playerId = player.uniqueId
 
