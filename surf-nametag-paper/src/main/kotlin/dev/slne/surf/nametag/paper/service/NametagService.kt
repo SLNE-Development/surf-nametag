@@ -36,11 +36,8 @@ class NametagService {
     fun handleJoin(joined: Player) {
         val joinedId = joined.uniqueId
 
-        sendTeamCreate(joined)
-
-        forEachPlayer { viewer ->
-            if (viewer.uniqueId == joinedId) return@forEachPlayer
-            sendTeamAddMember(viewer, joined.name)
+        forEachPlayer { player ->
+            sendTeamRefresh(player)
         }
 
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {
@@ -74,8 +71,6 @@ class NametagService {
                     spawnedDisplays.remove(key)
                 }
             }
-
-            sendTeamRemoveMember(viewer, player.name)
         }
 
         cleanupPlayerState(playerId)
@@ -91,7 +86,7 @@ class NametagService {
 
     fun ensureTeamMembership(viewer: Player, memberName: String) {
         if (viewer.uniqueId !in teamCreatedFor) {
-            sendTeamCreate(viewer)
+            sendTeamRefresh(viewer)
         }
         sendTeamAddMember(viewer, memberName)
     }
@@ -303,7 +298,17 @@ class NametagService {
         return WrapperPlayServerEntityMetadata(entityId, metadata)
     }
 
-    private fun sendTeamCreate(viewer: Player) {
+    private fun sendTeamRefresh(viewer: Player) {
+        if (viewer.uniqueId in teamCreatedFor) {
+            viewer.sendPacket(
+                WrapperPlayServerTeams(
+                    TEAM_NAME,
+                    WrapperPlayServerTeams.TeamMode.REMOVE,
+                    null as WrapperPlayServerTeams.ScoreBoardTeamInfo?
+                )
+            )
+        }
+
         val members = mutableListOf<String>()
         forEachPlayer { members.add(it.name) }
 
@@ -336,19 +341,6 @@ class NametagService {
             WrapperPlayServerTeams(
                 TEAM_NAME,
                 WrapperPlayServerTeams.TeamMode.ADD_ENTITIES,
-                null as WrapperPlayServerTeams.ScoreBoardTeamInfo?,
-                memberName
-            )
-        )
-    }
-
-    private fun sendTeamRemoveMember(viewer: Player, memberName: String) {
-        if (viewer.uniqueId !in teamCreatedFor) return
-
-        viewer.sendPacket(
-            WrapperPlayServerTeams(
-                TEAM_NAME,
-                WrapperPlayServerTeams.TeamMode.REMOVE_ENTITIES,
                 null as WrapperPlayServerTeams.ScoreBoardTeamInfo?,
                 memberName
             )
