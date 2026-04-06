@@ -34,27 +34,9 @@ class NametagService {
         entityIds.getOrPut(player) { random.nextInt() }
 
     fun handleJoin(joined: Player) {
-        val joinedId = joined.uniqueId
-
         forEachPlayer { player ->
             sendTeamRefresh(player)
         }
-
-        Bukkit.getScheduler().runTaskLater(plugin, Runnable {
-            if (!joined.isOnline) return@Runnable
-
-            forEachPlayer { other ->
-                if (other.uniqueId == joinedId) return@forEachPlayer
-
-                if (other.canSee(joined)) {
-                    spawnTextDisplay(joined, other)
-                }
-
-                if (joined.canSee(other)) {
-                    spawnTextDisplay(other, joined)
-                }
-            }
-        }, 2L)
     }
 
     fun handleQuit(player: Player) {
