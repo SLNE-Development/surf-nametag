@@ -15,21 +15,9 @@ class SurfNametagApiImpl : SurfNametagApi, Services.Fallback {
     override fun hideNametag(player: UUID, viewer: UUID) =
         nametagService.hideNametag(player, viewer)
 
-    override fun setPrefix(
-        player: UUID,
-        viewer: UUID,
-        prefix: Component
-    ) = nametagService.setPrefix(player, viewer, prefix)
+    override fun setNametag(player: UUID, viewer: UUID, nametag: Component) =
+        nametagService.setNametag(player, viewer, nametag)
 
-    override fun setSuffix(
-        player: UUID,
-        viewer: UUID,
-        suffix: Component
-    ) = nametagService.setSuffix(player, viewer, suffix)
-
-    override fun resetPrefix(player: UUID, viewer: UUID) =
-        nametagService.resetPrefix(player, viewer)
-
-    override fun resetSuffix(player: UUID, viewer: UUID) =
-        nametagService.resetSuffix(player, viewer)
+    override fun resetNametag(player: UUID, viewer: UUID) =
+        nametagService.resetNametag(player, viewer)
 }
