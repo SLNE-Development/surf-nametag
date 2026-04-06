@@ -2,10 +2,12 @@ package dev.slne.surf.nametag.paper
 
 import com.github.retrooper.packetevents.PacketEvents
 import com.github.shynixn.mccoroutine.folia.SuspendingJavaPlugin
+import dev.slne.surf.api.paper.event.register
+import dev.slne.surf.api.paper.extensions.pluginManager
+import dev.slne.surf.nametag.paper.hook.ClanHook
 import dev.slne.surf.nametag.paper.hook.LuckPermsHook
 import dev.slne.surf.nametag.paper.listener.NametagListener
 import dev.slne.surf.nametag.paper.listener.NametagPacketListener
-import dev.slne.surf.surfapi.bukkit.api.event.register
 import org.bukkit.plugin.java.JavaPlugin
 
 val plugin get() = JavaPlugin.getPlugin(PaperMain::class.java)
@@ -15,8 +17,12 @@ class PaperMain : SuspendingJavaPlugin() {
         NametagListener.register()
         PacketEvents.getAPI().eventManager.registerListener(NametagPacketListener)
 
-        if (LuckPermsHook.isEnabled()) {
-            LuckPermsHook.load()
+        LuckPermsHook.load()
+
+        if(checkSurfClan()) {
+            ClanHook.createListeners()
         }
     }
+
+    fun checkSurfClan() = pluginManager.isPluginEnabled("surf-clan-paper")
 }

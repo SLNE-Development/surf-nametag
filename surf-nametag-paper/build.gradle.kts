@@ -1,7 +1,7 @@
-import dev.slne.surf.surfapi.gradle.util.registerSoft
+import dev.slne.surf.api.gradle.util.registerSoft
 
 plugins {
-    id("dev.slne.surf.surfapi.gradle.paper-plugin")
+    id("dev.slne.surf.api.gradle.paper-plugin")
 }
 
 surfPaperPluginApi {
@@ -11,11 +11,13 @@ surfPaperPluginApi {
     generateLibraryLoader(false)
 
     serverDependencies {
+        registerSoft("surf-clan-paper")
         registerSoft("LuckPerms")
     }
 }
 
 dependencies {
-    api(project(":surf-nametag-api"))
+    api(projects.surfNametagApi)
     compileOnly("net.luckperms:api:5.4")
+    compileOnly("dev.slne.surf.clan:surf-clan-api:+")
 }

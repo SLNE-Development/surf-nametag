@@ -5,30 +5,28 @@ import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes
 import com.github.retrooper.packetevents.util.Vector3f
 import com.github.retrooper.packetevents.wrapper.play.server.*
+import com.github.shynixn.mccoroutine.folia.launch
+import dev.slne.surf.api.core.messages.adventure.buildText
+import dev.slne.surf.api.core.minimessage.miniMessage
+import dev.slne.surf.api.core.util.random
+import dev.slne.surf.api.paper.util.forEachPlayer
+import dev.slne.surf.nametag.paper.hook.ClanHook
 import dev.slne.surf.nametag.paper.hook.LuckPermsHook
 import dev.slne.surf.nametag.paper.plugin
 import dev.slne.surf.nametag.paper.util.sendPacket
-import dev.slne.surf.surfapi.bukkit.api.util.forEachPlayer
-import dev.slne.surf.surfapi.core.api.messages.adventure.buildText
-import dev.slne.surf.surfapi.core.api.minimessage.miniMessage
-import dev.slne.surf.surfapi.core.api.util.mutableObject2ObjectMapOf
-import dev.slne.surf.surfapi.core.api.util.mutableObjectSetOf
-import dev.slne.surf.surfapi.core.api.util.random
 import io.github.retrooper.packetevents.util.SpigotConversionUtil
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 class NametagService {
-    private val mm = MiniMessage.miniMessage()
-
-    private val entityIds = mutableObject2ObjectMapOf<UUID, Int>()
-    private val nametagOverrides = mutableObject2ObjectMapOf<Pair<UUID, UUID>, Component>()
-    private val hiddenNametags = mutableObjectSetOf<Pair<UUID, UUID>>()
-    private val spawnedDisplays = mutableObjectSetOf<Pair<UUID, UUID>>()
-    private val teamCreatedFor = mutableObjectSetOf<UUID>()
+    private val entityIds = ConcurrentHashMap<UUID, Int>()
+    private val nametagOverrides = ConcurrentHashMap<Pair<UUID, UUID>, Component>()
+    private val hiddenNametags = ConcurrentHashMap.newKeySet<Pair<UUID, UUID>>()
+    private val spawnedDisplays = ConcurrentHashMap.newKeySet<Pair<UUID, UUID>>()
+    private val teamCreatedFor = ConcurrentHashMap.newKeySet<UUID>()
 
     private fun getOrCreateEntityId(player: UUID): Int =
         entityIds.getOrPut(player) { random.nextInt() }
@@ -82,7 +80,9 @@ class NametagService {
             if (!player.isOnline || !viewer.isOnline) return@Runnable
             val key = playerId to viewerId
             if (key !in hiddenNametags) {
-                spawnTextDisplay(player, viewer)
+                plugin.launch {
+                    spawnTextDisplay(player, viewer)
+                }
             }
         }, 2L)
     }
@@ -100,11 +100,13 @@ class NametagService {
     fun handleDataUpdate(player: Player) {
         val playerId = player.uniqueId
 
-        forEachPlayer { viewer ->
-            if (viewer.uniqueId == playerId) return@forEachPlayer
-            val key = playerId to viewer.uniqueId
-            if (key in spawnedDisplays && key !in hiddenNametags) {
-                updateTextDisplayMetadata(playerId, viewer)
+        plugin.launch {
+            Bukkit.getOnlinePlayers().forEach { viewer ->
+                if (viewer.uniqueId == playerId) return@forEach
+                val key = playerId to viewer.uniqueId
+                if (key in spawnedDisplays && key !in hiddenNametags) {
+                    updateTextDisplayMetadata(playerId, viewer)
+                }
             }
         }
     }
@@ -117,7 +119,9 @@ class NametagService {
         val plr = Bukkit.getPlayer(player) ?: return
         val vwr = Bukkit.getPlayer(viewer) ?: return
 
-        spawnTextDisplay(plr, vwr)
+        plugin.launch {
+            spawnTextDisplay(plr, vwr)
+        }
     }
 
     fun hideNametag(player: UUID, viewer: UUID) {
@@ -139,7 +143,9 @@ class NametagService {
         val vwr = Bukkit.getPlayer(viewer) ?: return
         val key = player to viewer
         if (key in spawnedDisplays && key !in hiddenNametags) {
-            updateTextDisplayMetadata(player, vwr)
+            plugin.launch {
+                updateTextDisplayMetadata(player, vwr)
+            }
         }
     }
 
@@ -149,18 +155,24 @@ class NametagService {
 
         val vwr = Bukkit.getPlayer(viewer) ?: return
         if (key in spawnedDisplays && key !in hiddenNametags) {
-            updateTextDisplayMetadata(player, vwr)
+            plugin.launch {
+                updateTextDisplayMetadata(player, vwr)
+            }
         }
     }
 
-    private fun buildNametagText(playerUuid: UUID, viewer: UUID): Component {
+    private suspend fun buildNametagText(playerUuid: UUID, viewer: UUID): Component {
         nametagOverrides[playerUuid to viewer]?.let { return it }
 
         val player = Bukkit.getPlayer(playerUuid) ?: return Component.empty()
         val prefix = LuckPermsHook.getPrefix(playerUuid)
+        val clanTag = if (plugin.checkSurfClan()) ClanHook.getClanTag(playerUuid)
+            ?: Component.empty() else Component.empty()
 
         return buildText {
             append(miniMessage.deserialize("$prefix${player.name}"))
+            appendSpace()
+            append(clanTag)
         }
     }
 
@@ -171,42 +183,44 @@ class NametagService {
 
         if (key in hiddenNametags) return
 
-        if (key in spawnedDisplays) {
-            updateTextDisplayMetadata(playerId, viewer)
-            return
+        plugin.launch {
+            if (key in spawnedDisplays) {
+                updateTextDisplayMetadata(playerId, viewer)
+                return@launch
+            }
+
+            val entityId = getOrCreateEntityId(playerId)
+            val location = player.location
+
+            val spawnPacket = WrapperPlayServerSpawnEntity(
+                entityId,
+                UUID.randomUUID(),
+                EntityTypes.TEXT_DISPLAY,
+                SpigotConversionUtil.fromBukkitLocation(location),
+                0f,
+                0,
+                null
+            )
+
+            val metadataPacket = createMetadataPacket(playerId, viewerId, entityId)
+
+            val passengersPacket = WrapperPlayServerSetPassengers(
+                player.entityId,
+                intArrayOf(entityId)
+            )
+
+            viewer.sendPacket(spawnPacket, metadataPacket, passengersPacket)
+            spawnedDisplays.add(key)
         }
-
-        val entityId = getOrCreateEntityId(playerId)
-        val location = player.location
-
-        val spawnPacket = WrapperPlayServerSpawnEntity(
-            entityId,
-            UUID.randomUUID(),
-            EntityTypes.TEXT_DISPLAY,
-            SpigotConversionUtil.fromBukkitLocation(location),
-            0f,
-            0,
-            null
-        )
-
-        val metadataPacket = createMetadataPacket(playerId, viewerId, entityId)
-
-        val passengersPacket = WrapperPlayServerSetPassengers(
-            player.entityId,
-            intArrayOf(entityId)
-        )
-
-        viewer.sendPacket(spawnPacket, metadataPacket, passengersPacket)
-        spawnedDisplays.add(key)
     }
 
-    private fun updateTextDisplayMetadata(player: UUID, viewer: Player) {
+    private suspend fun updateTextDisplayMetadata(player: UUID, viewer: Player) {
         val entityId = entityIds[player] ?: return
         val metadataPacket = createMetadataPacket(player, viewer.uniqueId, entityId)
         viewer.sendPacket(metadataPacket)
     }
 
-    private fun createMetadataPacket(
+    private suspend fun createMetadataPacket(
         player: UUID,
         viewer: UUID,
         entityId: Int
