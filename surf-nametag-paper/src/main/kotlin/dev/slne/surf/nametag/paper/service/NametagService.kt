@@ -214,7 +214,7 @@ class NametagService {
         val nametagText = buildNametagText(player, viewer)
 
         val metadata = listOf(
-            EntityData(BILLBOARD_INDEX, EntityDataTypes.BYTE, VERT_BILLBOARD),
+            EntityData(BILLBOARD_INDEX, EntityDataTypes.BYTE, CENTER_BILLBOARD),
             EntityData(
                 TRANSLATION_INDEX, EntityDataTypes.VECTOR3F,
                 Vector3f(0f, NAMETAG_Y_OFFSET, 0f)
@@ -302,7 +302,7 @@ class NametagService {
         private const val TEXT_INDEX = 23
         private const val BACKGROUND_COLOR_INDEX = 25
 
-        private const val VERT_BILLBOARD: Byte = 1
+        private const val CENTER_BILLBOARD: Byte = 3
         private const val NAMETAG_Y_OFFSET = 0.3f
         private const val TRANSPARENT_BACKGROUND = 0
     }
