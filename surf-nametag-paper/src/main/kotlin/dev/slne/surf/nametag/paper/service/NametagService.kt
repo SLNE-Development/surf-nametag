@@ -283,8 +283,6 @@ class NametagService {
     }
 
     private fun cleanupPlayerState(playerId: UUID) {
-        prefixOverrides.keys.removeIf { it.first == playerId || it.second == playerId }
-        suffixOverrides.keys.removeIf { it.first == playerId || it.second == playerId }
         nametagOverrides.keys.removeIf { it.first == playerId || it.second == playerId }
         hiddenNametags.removeIf { it.first == playerId || it.second == playerId }
         spawnedDisplays.removeIf { it.first == playerId || it.second == playerId }
