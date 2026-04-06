@@ -9,6 +9,8 @@ import dev.slne.surf.nametag.paper.hook.LuckPermsHook
 import dev.slne.surf.nametag.paper.plugin
 import dev.slne.surf.nametag.paper.util.sendPacket
 import dev.slne.surf.surfapi.bukkit.api.util.forEachPlayer
+import dev.slne.surf.surfapi.core.api.messages.adventure.buildText
+import dev.slne.surf.surfapi.core.api.minimessage.miniMessage
 import dev.slne.surf.surfapi.core.api.util.mutableObject2ObjectMapOf
 import dev.slne.surf.surfapi.core.api.util.mutableObjectSetOf
 import dev.slne.surf.surfapi.core.api.util.random
@@ -23,8 +25,6 @@ class NametagService {
     private val mm = MiniMessage.miniMessage()
 
     private val entityIds = mutableObject2ObjectMapOf<UUID, Int>()
-    private val prefixOverrides = mutableObject2ObjectMapOf<Pair<UUID, UUID>, Component>()
-    private val suffixOverrides = mutableObject2ObjectMapOf<Pair<UUID, UUID>, Component>()
     private val nametagOverrides = mutableObject2ObjectMapOf<Pair<UUID, UUID>, Component>()
     private val hiddenNametags = mutableObjectSetOf<Pair<UUID, UUID>>()
     private val spawnedDisplays = mutableObjectSetOf<Pair<UUID, UUID>>()
@@ -164,8 +164,6 @@ class NametagService {
     fun resetNametag(player: UUID, viewer: UUID) {
         val key = player to viewer
         nametagOverrides.remove(key)
-        prefixOverrides.remove(key)
-        suffixOverrides.remove(key)
 
         val vwr = Bukkit.getPlayer(viewer) ?: return
         if (key in spawnedDisplays && key !in hiddenNametags) {
@@ -173,60 +171,15 @@ class NametagService {
         }
     }
 
-    fun setPrefix(player: UUID, viewer: UUID, prefix: Component) {
-        prefixOverrides[player to viewer] = prefix
+    private fun buildNametagText(playerUuid: UUID, viewer: UUID): Component {
+        nametagOverrides[playerUuid to viewer]?.let { return it }
 
-        val vwr = Bukkit.getPlayer(viewer) ?: return
-        val key = player to viewer
-        if (key in spawnedDisplays && key !in hiddenNametags) {
-            updateTextDisplayMetadata(player, vwr)
+        val player = Bukkit.getPlayer(playerUuid) ?: return Component.empty()
+        val prefix = LuckPermsHook.getPrefix(playerUuid)
+
+        return buildText {
+            append(miniMessage.deserialize("$prefix${player.name}"))
         }
-    }
-
-    fun setSuffix(player: UUID, viewer: UUID, suffix: Component) {
-        suffixOverrides[player to viewer] = suffix
-
-        val vwr = Bukkit.getPlayer(viewer) ?: return
-        val key = player to viewer
-        if (key in spawnedDisplays && key !in hiddenNametags) {
-            updateTextDisplayMetadata(player, vwr)
-        }
-    }
-
-    fun resetPrefix(player: UUID, viewer: UUID) {
-        prefixOverrides.remove(player to viewer)
-
-        val vwr = Bukkit.getPlayer(viewer) ?: return
-        val key = player to viewer
-        if (key in spawnedDisplays && key !in hiddenNametags) {
-            updateTextDisplayMetadata(player, vwr)
-        }
-    }
-
-    fun resetSuffix(player: UUID, viewer: UUID) {
-        suffixOverrides.remove(player to viewer)
-
-        val vwr = Bukkit.getPlayer(viewer) ?: return
-        val key = player to viewer
-        if (key in spawnedDisplays && key !in hiddenNametags) {
-            updateTextDisplayMetadata(player, vwr)
-        }
-    }
-
-    private fun buildNametagText(player: UUID, viewer: UUID): Component {
-        nametagOverrides[player to viewer]?.let { return it }
-
-        val prefix = prefixOverrides[player to viewer]
-            ?: mm.deserialize(LuckPermsHook.getPrefix(player))
-        val playerName = Bukkit.getPlayer(player)?.name ?: return Component.empty()
-        val suffix = suffixOverrides[player to viewer]
-            ?: mm.deserialize(LuckPermsHook.getSuffix(player))
-
-        return Component.text()
-            .append(prefix)
-            .append(Component.text(playerName))
-            .append(suffix)
-            .build()
     }
 
     private fun spawnTextDisplay(player: Player, viewer: Player) {
@@ -279,7 +232,7 @@ class NametagService {
         val nametagText = buildNametagText(player, viewer)
 
         val metadata = listOf(
-            EntityData(BILLBOARD_INDEX, EntityDataTypes.BYTE, CENTER_BILLBOARD),
+            EntityData(BILLBOARD_INDEX, EntityDataTypes.BYTE, VERT_BILLBOARD),
             EntityData(
                 TRANSLATION_INDEX, EntityDataTypes.VECTOR3F,
                 Vector3f(0f, NAMETAG_Y_OFFSET, 0f)
@@ -369,7 +322,7 @@ class NametagService {
         private const val TEXT_INDEX = 23
         private const val BACKGROUND_COLOR_INDEX = 25
 
-        private const val CENTER_BILLBOARD: Byte = 3
+        private const val VERT_BILLBOARD: Byte = 1
         private const val NAMETAG_Y_OFFSET = 0.3f
         private const val TRANSPARENT_BACKGROUND = 0
     }
