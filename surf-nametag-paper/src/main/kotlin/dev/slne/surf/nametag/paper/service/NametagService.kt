@@ -32,9 +32,11 @@ class NametagService {
         entityIds.getOrPut(player) { random.nextInt() }
 
     fun handleJoin(joined: Player) {
-        forEachPlayer { player ->
-            sendTeamRefresh(player)
-        }
+        Bukkit.getGlobalRegionScheduler().runDelayed(plugin, {
+            forEachPlayer { player ->
+                sendTeamRefresh(player)
+            }
+        }, 20L)
     }
 
     fun handleQuit(player: Player) {
