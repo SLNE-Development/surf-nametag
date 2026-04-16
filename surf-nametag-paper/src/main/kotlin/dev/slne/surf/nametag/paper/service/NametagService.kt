@@ -78,8 +78,8 @@ class NametagService {
         val viewerId = viewer.uniqueId
         if (playerId == viewerId) return
 
-        Bukkit.getScheduler().runTaskLater(plugin, Runnable {
-            if (!player.isOnline || !viewer.isOnline) return@Runnable
+        Bukkit.getGlobalRegionScheduler().runDelayed(plugin, {
+            if (!player.isOnline || !viewer.isOnline) return@runDelayed
             val key = playerId to viewerId
             if (key !in hiddenNametags) {
                 plugin.launch {
