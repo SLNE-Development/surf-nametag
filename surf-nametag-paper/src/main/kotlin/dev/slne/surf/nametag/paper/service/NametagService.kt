@@ -192,7 +192,8 @@ class NametagService {
             }
 
             val entityId = getOrCreateEntityId(playerId)
-            val location = player.location
+            val location =
+                player.location.clone().add(0.0, player.eyeHeight + NAMETAG_Y_OFFSET, 0.0)
 
             val spawnPacket = WrapperPlayServerSpawnEntity(
                 entityId,
