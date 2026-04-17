@@ -168,8 +168,8 @@ class NametagService {
 
         val player = Bukkit.getPlayer(playerUuid) ?: return Component.empty()
         val prefix = LuckPermsHook.getPrefix(playerUuid)
-        val clanTag = if (plugin.checkSurfClan()) ClanHook.getClanTag(playerUuid)
-            ?: Component.empty() else Component.empty()
+        val clanTag =
+            if (plugin.checkSurfClan()) ClanHook.getClanTag(playerUuid) else Component.empty()
 
         return buildText {
             append(miniMessage.deserialize("$prefix${player.name}"))
