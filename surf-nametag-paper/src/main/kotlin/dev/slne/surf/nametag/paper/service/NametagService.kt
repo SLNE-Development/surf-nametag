@@ -11,6 +11,7 @@ import dev.slne.surf.api.core.minimessage.miniMessage
 import dev.slne.surf.api.core.util.random
 import dev.slne.surf.api.paper.util.forEachPlayer
 import dev.slne.surf.nametag.paper.hook.ClanHook
+import dev.slne.surf.nametag.paper.hook.ContentCreatorHook
 import dev.slne.surf.nametag.paper.hook.LuckPermsHook
 import dev.slne.surf.nametag.paper.plugin
 import dev.slne.surf.nametag.paper.util.sendPacket
@@ -170,11 +171,14 @@ class NametagService {
         val prefix = LuckPermsHook.getPrefix(playerUuid)
         val clanTag =
             if (plugin.checkSurfClan()) ClanHook.getClanTag(playerUuid) else Component.empty()
+        val liveTag =
+            if (plugin.checkContentCreator()) ContentCreatorHook.renderLiveTag(playerUuid) else Component.empty()
 
         return buildText {
             append(miniMessage.deserialize("$prefix${player.name}"))
             appendSpace()
             append(clanTag)
+            append(liveTag)
         }
     }
 

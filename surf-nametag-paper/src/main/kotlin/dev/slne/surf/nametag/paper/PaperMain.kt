@@ -5,6 +5,7 @@ import com.github.shynixn.mccoroutine.folia.SuspendingJavaPlugin
 import dev.slne.surf.api.paper.event.register
 import dev.slne.surf.api.paper.extensions.pluginManager
 import dev.slne.surf.nametag.paper.hook.ClanHook
+import dev.slne.surf.nametag.paper.hook.ContentCreatorHook
 import dev.slne.surf.nametag.paper.hook.LuckPermsHook
 import dev.slne.surf.nametag.paper.listener.NametagListener
 import dev.slne.surf.nametag.paper.listener.NametagPacketListener
@@ -19,10 +20,15 @@ class PaperMain : SuspendingJavaPlugin() {
 
         LuckPermsHook.load()
 
-        if(checkSurfClan()) {
+        if (checkSurfClan()) {
             ClanHook.createListeners()
+        }
+
+        if (checkContentCreator()) {
+            ContentCreatorHook.registerListener()
         }
     }
 
     fun checkSurfClan() = pluginManager.isPluginEnabled("surf-clan-paper")
+    fun checkContentCreator() = pluginManager.isPluginEnabled("surf-content-creator-paper")
 }
