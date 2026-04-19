@@ -245,7 +245,7 @@ class NametagService {
                 Vector3f(1f, 1f, 1f)
             ),
             EntityData(TEXT_INDEX, EntityDataTypes.ADV_COMPONENT, nametagText),
-            EntityData(BACKGROUND_COLOR_INDEX, EntityDataTypes.INT, TRANSPARENT_BACKGROUND),
+            EntityData(BACKGROUND_COLOR_INDEX, EntityDataTypes.INT, BACKGROUND),
             EntityData(VIEW_RANGE_INDEX, EntityDataTypes.FLOAT, 1.0f),
             EntityData(SHADOW_RADIUS_INDEX, EntityDataTypes.FLOAT, 0f),
             EntityData(SHADOW_STRENGTH_INDEX, EntityDataTypes.FLOAT, 0f),
@@ -325,7 +325,7 @@ class NametagService {
 
         private const val CENTER_BILLBOARD: Byte = 3
         private const val NAMETAG_Y_OFFSET = 0.3f
-        private const val TRANSPARENT_BACKGROUND = 0
+        private const val BACKGROUND = 1073741824 // Transparent = 0
     }
 }
 
