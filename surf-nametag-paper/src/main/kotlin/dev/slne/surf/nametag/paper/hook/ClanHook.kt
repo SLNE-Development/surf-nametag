@@ -7,7 +7,6 @@ import dev.slne.clan.api.clan.listener.ClanCreatedListener
 import dev.slne.clan.api.clan.listener.ClanDeletedListener
 import dev.slne.clan.api.clan.listener.ClanUpdateMemberListener
 import dev.slne.clan.api.clan.listener.ClanUpdatedListener
-import dev.slne.surf.api.core.messages.adventure.buildText
 import dev.slne.surf.nametag.paper.plugin
 import dev.slne.surf.nametag.paper.service.nametagService
 import net.kyori.adventure.text.Component
@@ -16,16 +15,8 @@ import org.bukkit.entity.Player
 import java.util.*
 
 object ClanHook {
-    suspend fun getClanTag(playerUuid: UUID): Component {
-        val clan = Clan.byPlayer(playerUuid) ?: return Component.empty()
-        val color = clan.getClanTagColorOrDefault().foregroundColor
-
-        return buildText {
-            darkSpacer("[")
-            text(clan.tag, color)
-            darkSpacer("]")
-        }
-    }
+    suspend fun getClanTag(playerUuid: UUID): Component =
+        Clan.byPlayer(playerUuid)?.renderClanTag(1) ?: Component.empty()
 
     fun createListeners() {
         Clan.registerListener(object : ClanCreatedListener {
