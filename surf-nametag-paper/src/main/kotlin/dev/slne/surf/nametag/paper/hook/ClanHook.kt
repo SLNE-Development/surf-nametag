@@ -15,8 +15,8 @@ import org.bukkit.entity.Player
 import java.util.*
 
 object ClanHook {
-    suspend fun getClanTag(playerUuid: UUID): Component? =
-        Clan.byPlayer(playerUuid)?.renderClanTag(1)
+    suspend fun getClanTag(playerUuid: UUID): Component =
+        Clan.byPlayer(playerUuid)?.renderClanTag(1) ?: Component.empty()
 
     fun createListeners() {
         Clan.registerListener(object : ClanCreatedListener {
