@@ -91,7 +91,8 @@ class NametagService {
     fun handlePlayerUntracked(playerEntityId: Int, viewer: Player) {
         val player = Bukkit.getOnlinePlayers().find { it.entityId == playerEntityId } ?: return
         val key = player.uniqueId to viewer.uniqueId
-        if (key in spawnedDisplays) {
+
+        spawnedDisplays.forEach { _ ->
             spawnedDisplays.remove(key)
             val textDisplayEntityId = entityIds[player.uniqueId] ?: return
             viewer.sendPacket(WrapperPlayServerDestroyEntities(textDisplayEntityId))
