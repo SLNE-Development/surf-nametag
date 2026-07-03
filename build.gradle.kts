@@ -1,5 +1,3 @@
-import dev.slne.surf.api.gradle.util.slneReleases
-
 buildscript {
     repositories {
         gradlePluginPortal()
@@ -13,16 +11,4 @@ buildscript {
 allprojects {
     version = findProperty("version") as String
     group = "dev.slne.surf.nametag"
-}
-
-subprojects {
-    afterEvaluate {
-        plugins.withType<PublishingPlugin> {
-            configure<PublishingExtension> {
-                repositories {
-                    slneReleases()
-                }
-            }
-        }
-    }
 }
