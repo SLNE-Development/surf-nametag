@@ -8,7 +8,7 @@ import dev.slne.clan.api.clan.listener.ClanDeletedListener
 import dev.slne.clan.api.clan.listener.ClanUpdateMemberListener
 import dev.slne.clan.api.clan.listener.ClanUpdatedListener
 import dev.slne.surf.nametag.paper.plugin
-import dev.slne.surf.nametag.paper.service.nametagService
+import dev.slne.surf.nametag.paper.service.NametagService
 import net.kyori.adventure.text.Component
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -23,7 +23,9 @@ object ClanHook {
             override fun onClanCreated(clan: Clan) {
                 plugin.launch {
                     clan.members.map { member -> member.uuid }.mapNotNull { Bukkit.getPlayer(it) }
-                        .forEach(::updatePlayer)
+                        .forEach {
+                            updatePlayer(it)
+                        }
                 }
             }
         })
@@ -32,7 +34,9 @@ object ClanHook {
             override fun onClanUpdated(clan: Clan) {
                 plugin.launch {
                     clan.members.map { member -> member.uuid }.mapNotNull { Bukkit.getPlayer(it) }
-                        .forEach(::updatePlayer)
+                        .forEach {
+                            updatePlayer(it)
+                        }
                 }
             }
         })
@@ -41,7 +45,9 @@ object ClanHook {
             override fun onClanMemberUpdated(clan: Clan, memberUuid: UUID, added: Boolean) {
                 plugin.launch {
                     clan.members.map { member -> member.uuid }.mapNotNull { Bukkit.getPlayer(it) }
-                        .forEach(::updatePlayer)
+                        .forEach {
+                            updatePlayer(it)
+                        }
                 }
             }
         })
@@ -50,14 +56,16 @@ object ClanHook {
             override fun onClanDeleted(clan: ClanView) {
                 plugin.launch {
                     clan.members.map { member -> member.uuid }.mapNotNull { Bukkit.getPlayer(it) }
-                        .forEach(::updatePlayer)
+                        .forEach {
+                            updatePlayer(it)
+                        }
                 }
             }
         })
     }
 
 
-    private fun updatePlayer(player: Player) {
-        nametagService.handleDataUpdate(player)
+    private suspend fun updatePlayer(player: Player) {
+        NametagService.handleDataUpdate(player)
     }
 }
