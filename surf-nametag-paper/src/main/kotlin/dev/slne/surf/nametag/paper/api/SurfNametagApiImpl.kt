@@ -12,4 +12,9 @@ class SurfNametagApiImpl : SurfNametagApi, Services.Fallback {
         NametagService.preventUpdates(playerUuid)
         return true
     }
+
+    override fun allowNametagUpdate(playerUuid: UUID): Boolean {
+        NametagService.allowUpdates(playerUuid)
+        return true
+    }
 }

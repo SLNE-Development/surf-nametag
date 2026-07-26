@@ -1,7 +1,7 @@
 package dev.slne.surf.nametag.paper.service
 
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTeams
-import dev.slne.surf.api.core.luckperms.getLuckPermsUser
+import dev.slne.surf.api.core.luckperms.getLuckPermsUserOrNull
 import dev.slne.surf.api.core.luckperms.prefix
 import dev.slne.surf.api.core.minimessage.miniMessage
 import dev.slne.surf.api.paper.util.forEachPlayer
@@ -33,9 +33,17 @@ object NametagService {
         preventNametagUpdateUuids.remove(uuid)
     }
 
-    private fun createNameTag(player: Player, viewer: Player, clanTag: Component) = nametag {
+    private fun teamName(player: Player, viewer: Player) = "${player.uniqueId}-${viewer.uniqueId}"
+
+    private suspend fun clanTag(player: Player) = if (plugin.checkSurfClan()) {
+        ClanHook.getClanTag(player.uniqueId)
+    } else {
+        Component.empty()
+    }
+
+    private fun createNameTag(player: Player, clanTag: Component) = nametag {
         prefix {
-            append(miniMessage.deserialize(player.getLuckPermsUser().prefix))
+            append(miniMessage.deserialize(player.getLuckPermsUserOrNull()?.prefix ?: ""))
         }
 
         playerName(player.name)
@@ -44,134 +52,41 @@ object NametagService {
             append(clanTag)
 
             if (plugin.checkContentCreator()) {
-                appendSpace()
                 append(ContentCreatorHook.renderLiveTag(player.uniqueId))
             }
         }
     }
 
     private fun createTeamPacket(
-        relationString: String,
+        teamName: String,
         mode: WrapperPlayServerTeams.TeamMode,
         nameTag: Nametag,
         config: NametagConfig
     ) =
         WrapperPlayServerTeams(
-            relationString,
+            teamName,
             mode,
             WrapperPlayServerTeams.ScoreBoardTeamInfo(
-                Component.text("surf-nametag-${relationString}"),
+                Component.text("surf-nametag-${teamName}"),
                 nameTag.prefix,
                 nameTag.suffix,
                 config.nameTagVisibility,
                 config.collisionRule,
                 config.nameColor,
                 config.optionData
-            )
+            ),
+            nameTag.playerName
         )
 
     private val nullScoreboardInfo: WrapperPlayServerTeams.ScoreBoardTeamInfo? = null
 
     suspend fun handleJoin(player: Player) {
-        val config = NametagConfig.getConfig()
+        Bukkit.getOnlinePlayers().forEach { viewer ->
+            handleJoin(player, viewer)
 
-        if (player.uniqueId in preventNametagUpdateUuids) {
-            return
-        }
-
-
-        val playerClanTag = if (plugin.checkSurfClan()) {
-            ClanHook.getClanTag(player.uniqueId)
-        } else {
-            Component.empty()
-        }
-
-        Bukkit.getOnlinePlayers().forEach {
-            if (it.uniqueId in preventNametagUpdateUuids) {
-                return@forEach
+            if (viewer.uniqueId != player.uniqueId) {
+                handleJoin(viewer, player)
             }
-
-            val nameTag = createNameTag(player, it, playerClanTag)
-
-            it.sendPacket(
-                createTeamPacket(
-                    "${player.uniqueId}-${it.uniqueId}",
-                    WrapperPlayServerTeams.TeamMode.CREATE,
-                    nameTag,
-                    config
-                )
-            )
-
-            it.sendPacket(
-                WrapperPlayServerTeams(
-                    "${it.uniqueId}-${player.uniqueId}",
-                    WrapperPlayServerTeams.TeamMode.ADD_ENTITIES,
-                    nullScoreboardInfo,
-                    player.name
-                )
-            )
-
-            if (it.uniqueId != player.uniqueId) {
-                val viewerClanTag = if (plugin.checkSurfClan()) {
-                    ClanHook.getClanTag(it.uniqueId)
-                } else {
-                    Component.empty()
-                }
-
-                val reverseNameTag = createNameTag(it, player, viewerClanTag)
-
-                player.sendPacket(
-                    createTeamPacket(
-                        "${it.uniqueId}-${player.uniqueId}",
-                        WrapperPlayServerTeams.TeamMode.CREATE,
-                        reverseNameTag,
-                        config
-                    )
-                )
-
-                player.sendPacket(
-                    WrapperPlayServerTeams(
-                        "${player.uniqueId}-${it.uniqueId}",
-                        WrapperPlayServerTeams.TeamMode.ADD_ENTITIES,
-                        nullScoreboardInfo,
-                        it.name
-                    )
-                )
-            }
-        }
-    }
-
-    suspend fun handleDataUpdate(player: Player) {
-        if (player.uniqueId in preventNametagUpdateUuids) {
-            return
-        }
-
-        val clanTag = if (plugin.checkSurfClan()) {
-            ClanHook.getClanTag(player.uniqueId)
-        } else {
-            Component.empty()
-        }
-
-        forEachPlayer {
-            if (it.uniqueId in preventNametagUpdateUuids) {
-                return@forEachPlayer
-            }
-
-            val nameTag = createNameTag(player, it, clanTag)
-            val teamPacket = createTeamPacket(
-                "${player.uniqueId}-${it.uniqueId}",
-                WrapperPlayServerTeams.TeamMode.UPDATE,
-                nameTag,
-                NametagConfig.getConfig()
-            )
-
-            it.sendPacket(teamPacket)
-        }
-    }
-
-    fun handleLeave(player: Player) {
-        forEachPlayer {
-            handleLeave(player, it)
         }
     }
 
@@ -180,33 +95,48 @@ object NametagService {
             return
         }
 
-        val config = NametagConfig.getConfig()
-
-        val playerClanTag = if (plugin.checkSurfClan()) {
-            ClanHook.getClanTag(player.uniqueId)
-        } else {
-            Component.empty()
-        }
-
-        val nameTag = createNameTag(player, viewer, playerClanTag)
+        val nameTag = createNameTag(player, clanTag(player))
 
         viewer.sendPacket(
             createTeamPacket(
-                "${player.uniqueId}-${viewer.uniqueId}",
+                teamName(player, viewer),
                 WrapperPlayServerTeams.TeamMode.CREATE,
                 nameTag,
-                config
+                NametagConfig.getConfig()
             )
         )
+    }
 
-        viewer.sendPacket(
-            WrapperPlayServerTeams(
-                "${viewer.uniqueId}-${player.uniqueId}",
-                WrapperPlayServerTeams.TeamMode.ADD_ENTITIES,
-                nullScoreboardInfo,
-                player.name
+    suspend fun handleDataUpdate(player: Player) {
+        if (shouldPrevent(player)) {
+            return
+        }
+
+        val nameTag = createNameTag(player, clanTag(player))
+        val config = NametagConfig.getConfig()
+
+        forEachPlayer { viewer ->
+            if (shouldPrevent(viewer)) {
+                return@forEachPlayer
+            }
+
+            viewer.sendPacket(
+                createTeamPacket(
+                    teamName(player, viewer),
+                    WrapperPlayServerTeams.TeamMode.UPDATE,
+                    nameTag,
+                    config
+                )
             )
-        )
+        }
+    }
+
+    fun handleLeave(player: Player) {
+        forEachPlayer {
+            handleLeave(player, it)
+        }
+
+        allowUpdates(player.uniqueId)
     }
 
     fun handleLeave(player: Player, viewer: Player) {
@@ -216,19 +146,9 @@ object NametagService {
 
         viewer.sendPacket(
             WrapperPlayServerTeams(
-                "${player.uniqueId}-${viewer.uniqueId}",
+                teamName(player, viewer),
                 WrapperPlayServerTeams.TeamMode.REMOVE,
-                nullScoreboardInfo,
-                player.name
-            )
-        )
-
-        viewer.sendPacket(
-            WrapperPlayServerTeams(
-                "${viewer.uniqueId}-${player.uniqueId}",
-                WrapperPlayServerTeams.TeamMode.REMOVE,
-                nullScoreboardInfo,
-                viewer.name
+                nullScoreboardInfo
             )
         )
     }

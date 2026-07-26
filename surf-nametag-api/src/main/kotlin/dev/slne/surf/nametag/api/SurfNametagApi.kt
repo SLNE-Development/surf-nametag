@@ -8,5 +8,7 @@ private val api = requiredService<SurfNametagApi>()
 interface SurfNametagApi {
     fun preventNametagUpdate(playerUuid: UUID): Boolean
 
+    fun allowNametagUpdate(playerUuid: UUID): Boolean
+
     companion object : SurfNametagApi by api
 }

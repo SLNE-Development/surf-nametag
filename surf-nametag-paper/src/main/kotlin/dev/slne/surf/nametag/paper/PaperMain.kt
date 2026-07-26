@@ -3,6 +3,7 @@ package dev.slne.surf.nametag.paper
 import com.github.shynixn.mccoroutine.folia.SuspendingJavaPlugin
 import dev.slne.surf.api.paper.event.register
 import dev.slne.surf.api.paper.extensions.pluginManager
+import dev.slne.surf.nametag.paper.config.NametagConfig
 import dev.slne.surf.nametag.paper.hook.ClanHook
 import dev.slne.surf.nametag.paper.hook.ContentCreatorHook
 import dev.slne.surf.nametag.paper.hook.LuckPermsHook
@@ -13,6 +14,8 @@ val plugin get() = JavaPlugin.getPlugin(PaperMain::class.java)
 
 class PaperMain : SuspendingJavaPlugin() {
     override fun onEnable() {
+        NametagConfig.init()
+
         NametagListener.register()
 
         LuckPermsHook.load()
