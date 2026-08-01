@@ -1,34 +1,41 @@
 package dev.slne.surf.nametag.paper.listener
 
-import dev.slne.surf.nametag.paper.service.nametagService
+import com.github.shynixn.mccoroutine.folia.launch
+import dev.slne.surf.nametag.paper.plugin
+import dev.slne.surf.nametag.paper.service.NametagService
+import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerHideEntityEvent
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.event.player.PlayerShowEntityEvent
-import org.bukkit.entity.Player
 
 object NametagListener : Listener {
     @EventHandler
     fun onJoin(event: PlayerJoinEvent) {
-        nametagService.handleJoin(event.player)
+        plugin.launch {
+            NametagService.handleJoin(event.player)
+        }
     }
 
     @EventHandler
     fun onQuit(event: PlayerQuitEvent) {
-        nametagService.handleQuit(event.player)
+        NametagService.handleLeave(event.player)
     }
 
     @EventHandler
     fun onHide(event: PlayerHideEntityEvent) {
         val hiddenPlayer = event.entity as? Player ?: return
-        nametagService.hideNametag(hiddenPlayer.uniqueId, event.player.uniqueId)
+        NametagService.handleLeave(hiddenPlayer, event.player)
     }
 
     @EventHandler
     fun onShow(event: PlayerShowEntityEvent) {
         val shownPlayer = event.entity as? Player ?: return
-        nametagService.showNametag(shownPlayer.uniqueId, event.player.uniqueId)
+
+        plugin.launch {
+            NametagService.handleJoin(shownPlayer, event.player)
+        }
     }
 }
