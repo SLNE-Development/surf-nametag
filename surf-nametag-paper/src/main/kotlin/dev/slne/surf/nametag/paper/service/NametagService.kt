@@ -49,9 +49,11 @@ object NametagService {
         playerName(player.name)
 
         suffix {
+            appendSpace()
             append(clanTag)
 
             if (plugin.checkContentCreator()) {
+                appendSpace()
                 append(ContentCreatorHook.renderLiveTag(player.uniqueId))
             }
         }
