@@ -4,6 +4,7 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerTe
 import dev.slne.surf.api.core.luckperms.getLuckPermsUserOrNull
 import dev.slne.surf.api.core.luckperms.prefix
 import dev.slne.surf.api.core.minimessage.miniMessage
+import dev.slne.surf.api.paper.inventory.framework.view.util.shift
 import dev.slne.surf.api.paper.util.forEachPlayer
 import dev.slne.surf.nametag.api.nametag.Nametag
 import dev.slne.surf.nametag.api.nametag.nametag
@@ -49,7 +50,7 @@ object NametagService {
         playerName(player.name)
 
         suffix {
-            spacer("\uE113")
+            spacer(shift(4))
             append(clanTag)
 
             if (plugin.checkContentCreator()) {
