@@ -49,7 +49,7 @@ object NametagService {
         playerName(player.name)
 
         suffix {
-            appendSpace()
+            spacer("\uE113")
             append(clanTag)
 
             if (plugin.checkContentCreator()) {
