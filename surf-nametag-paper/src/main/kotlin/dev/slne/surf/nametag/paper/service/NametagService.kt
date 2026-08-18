@@ -34,7 +34,7 @@ object NametagService {
         preventNametagUpdateUuids.remove(uuid)
     }
 
-    private fun teamName(player: Player, viewer: Player) = "${player.uniqueId}-${viewer.uniqueId}"
+    private fun teamName(player: Player, viewer: Player) = "${player.name}-${viewer.name}"
 
     private suspend fun clanTag(player: Player) = if (plugin.checkSurfClan()) {
         ClanHook.getClanTag(player.uniqueId)
