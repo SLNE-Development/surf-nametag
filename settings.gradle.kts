@@ -1,5 +1,7 @@
 include("surf-nametag-api")
+include("surf-nametag-core-client")
 include("surf-nametag-paper")
+include("surf-nametag-minestom")
 
 pluginManagement {
     repositories {

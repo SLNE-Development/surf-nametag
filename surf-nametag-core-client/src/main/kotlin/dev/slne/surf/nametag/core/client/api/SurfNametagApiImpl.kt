@@ -1,8 +1,8 @@
-package dev.slne.surf.nametag.paper.api
+package dev.slne.surf.nametag.core.client.api
 
 import com.google.auto.service.AutoService
 import dev.slne.surf.nametag.api.SurfNametagApi
-import dev.slne.surf.nametag.paper.service.NametagService
+import dev.slne.surf.nametag.core.client.service.NametagService
 import net.kyori.adventure.util.Services
 import java.util.*
 

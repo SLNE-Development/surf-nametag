@@ -3,10 +3,10 @@ package dev.slne.surf.nametag.paper
 import com.github.shynixn.mccoroutine.folia.SuspendingJavaPlugin
 import dev.slne.surf.api.paper.event.register
 import dev.slne.surf.api.paper.extensions.pluginManager
-import dev.slne.surf.nametag.paper.config.NametagConfig
-import dev.slne.surf.nametag.paper.hook.ClanHook
-import dev.slne.surf.nametag.paper.hook.ContentCreatorHook
-import dev.slne.surf.nametag.paper.hook.LuckPermsHook
+import dev.slne.surf.nametag.core.client.config.NametagConfig
+import dev.slne.surf.nametag.core.client.hook.ClanHook
+import dev.slne.surf.nametag.core.client.hook.ContentCreatorHook
+import dev.slne.surf.nametag.paper.hook.registerLuckPermsListeners
 import dev.slne.surf.nametag.paper.listener.NametagListener
 import org.bukkit.plugin.java.JavaPlugin
 
@@ -18,7 +18,7 @@ class PaperMain : SuspendingJavaPlugin() {
 
         NametagListener.register()
 
-        LuckPermsHook.load()
+        registerLuckPermsListeners()
 
         if (checkSurfClan()) {
             ClanHook.createListeners()
