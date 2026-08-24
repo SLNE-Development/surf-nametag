@@ -11,6 +11,7 @@ import java.util.*
 class MinestomNametagPlayer(private val player: Player) : NametagPlayer {
     override val uuid: UUID get() = player.uuid
     override val name: String get() = player.username
+    override val isOnline: Boolean get() = player.isOnline
 
     override fun showNametag(teamName: String, nametag: Nametag, config: NametagConfig) {
         player.sendPacket(

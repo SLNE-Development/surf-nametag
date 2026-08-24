@@ -20,6 +20,11 @@ interface NametagPlayer {
     val name: String
 
     /**
+     * Whether this player is still connected to this server.
+     */
+    val isOnline: Boolean
+
+    /**
      * Shows [nametag] under [teamName] to this player, rendered with [config].
      */
     fun showNametag(teamName: String, nametag: Nametag, config: NametagConfig)

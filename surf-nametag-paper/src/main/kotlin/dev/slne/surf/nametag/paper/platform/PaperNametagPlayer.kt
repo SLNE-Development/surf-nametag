@@ -14,6 +14,7 @@ private val nullScoreboardInfo: WrapperPlayServerTeams.ScoreBoardTeamInfo? = nul
 class PaperNametagPlayer(private val player: Player) : NametagPlayer {
     override val uuid: UUID get() = player.uniqueId
     override val name: String get() = player.name
+    override val isOnline: Boolean get() = player.isOnline
 
     override fun showNametag(teamName: String, nametag: Nametag, config: NametagConfig) {
         player.sendPacket(

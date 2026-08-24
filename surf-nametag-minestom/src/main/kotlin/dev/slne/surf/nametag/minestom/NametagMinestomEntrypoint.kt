@@ -28,6 +28,7 @@ class NametagMinestomEntrypoint @Inject constructor(
     }
 
     companion object {
+        @Volatile
         lateinit var dataPath: Path
     }
 }

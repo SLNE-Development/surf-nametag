@@ -20,4 +20,10 @@ fun NametagCollisionRule.toMinestom(): TeamsPacket.CollisionRule = when (this) {
     NametagCollisionRule.PUSH_OWN_TEAM -> TeamsPacket.CollisionRule.PUSH_OWN_TEAM
 }
 
-fun NamedTextColor.toTeamColor(): TeamColor? = TeamColor.fromName(name())
+private val teamColors: Map<NamedTextColor, TeamColor> = buildMap {
+    for (color in NamedTextColor.NAMES.values()) {
+        TeamColor.fromName(color.name())?.let { put(color, it) }
+    }
+}
+
+fun NamedTextColor.toTeamColor(): TeamColor? = teamColors[this]

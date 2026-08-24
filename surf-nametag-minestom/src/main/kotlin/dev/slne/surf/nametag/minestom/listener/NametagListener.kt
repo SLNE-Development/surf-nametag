@@ -28,7 +28,11 @@ class NametagListener @Inject constructor() : EventRegistrar {
         }
 
         node.addListener<PlayerDisconnectEvent> { event ->
-            NametagService.handleLeave(MinestomNametagPlayer(event.player))
+            val player = MinestomNametagPlayer(event.player)
+
+            minestomScope.launch {
+                NametagService.handleLeave(player)
+            }
         }
     }
 }

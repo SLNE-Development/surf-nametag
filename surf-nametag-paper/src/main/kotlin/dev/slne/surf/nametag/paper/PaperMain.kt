@@ -13,9 +13,19 @@ import org.bukkit.plugin.java.JavaPlugin
 val plugin get() = JavaPlugin.getPlugin(PaperMain::class.java)
 
 class PaperMain : SuspendingJavaPlugin() {
-    override fun onEnable() {
-        NametagConfig.init()
 
+    @Volatile
+    private var hasClanPlugin: Boolean = false
+
+    @Volatile
+    private var hasContentCreatorPlugin: Boolean = false
+
+
+    override fun onEnable() {
+        hasClanPlugin = pluginManager.isPluginEnabled(CLAN_PLUGIN)
+        hasContentCreatorPlugin = pluginManager.isPluginEnabled(CONTENT_CREATOR_PLUGIN)
+
+        NametagConfig.init()
         NametagListener.register()
 
         registerLuckPermsListeners()
@@ -29,6 +39,16 @@ class PaperMain : SuspendingJavaPlugin() {
         }
     }
 
-    fun checkSurfClan() = pluginManager.isPluginEnabled("surf-clan-paper")
-    fun checkContentCreator() = pluginManager.isPluginEnabled("surf-content-creator-paper")
+    fun checkSurfClan(): Boolean {
+        return hasClanPlugin
+    }
+
+    fun checkContentCreator(): Boolean {
+        return hasContentCreatorPlugin
+    }
+
+    private companion object {
+        const val CLAN_PLUGIN = "surf-clan-paper"
+        const val CONTENT_CREATOR_PLUGIN = "surf-content-creator-paper"
+    }
 }
