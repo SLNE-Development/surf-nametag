@@ -6,7 +6,6 @@ include("surf-nametag-minestom")
 pluginManagement {
     repositories {
         gradlePluginPortal()
-        mavenLocal()
         maven("https://reposilite.slne.dev/releases")
     }
 }
