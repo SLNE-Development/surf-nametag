@@ -4,10 +4,6 @@ plugins {
     id("dev.slne.surf.api.gradle.core")
 }
 
-repositories {
-    mavenLocal()
-}
-
 dependencies {
     api(projects.surfNametagApi)
 
