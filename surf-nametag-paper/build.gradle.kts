@@ -16,6 +16,10 @@ surfPaperPluginApi {
     }
 }
 
+repositories {
+    mavenLocal()
+}
+
 dependencies {
     api(projects.surfNametagCoreClient)
     compileOnly("dev.slne.surf.clan:surf-clan-api:+")
