@@ -1,21 +1,22 @@
 package dev.slne.surf.nametag.minestom
 
-import com.google.auto.service.AutoService
-import dev.slne.minestom.lobby.api.plugin.MinestomPlugin
-import dev.slne.minestom.lobby.api.plugin.annotation.MinestomPluginMeta
+import dev.slne.surf.api.minestom.plugin.SurfMinestomPlugin
+import dev.slne.surf.nametag.core.client.config.NametagConfig
+import dev.slne.surf.nametag.core.client.hook.ClanHook
+import dev.slne.surf.nametag.core.client.hook.ContentCreatorHook
+import dev.slne.surf.nametag.minestom.hook.registerLuckPermsListeners
 import dev.slne.surf.nametag.minestom.listener.NametagListener
 
-@AutoService(MinestomPlugin::class)
-@MinestomPluginMeta(
-    "surf-nametag-minestom",
-    dependsOn = [
-        "surf-api-minestom",
-        "surf-clan-minestom",
-        "surf-content-creator-minestom"
-    ]
-)
-class NametagMinestomPlugin : MinestomPlugin(NametagMinestomEntrypoint::class.java) {
-    override fun configurePlugin() {
-        bindEventRegistrar<NametagListener>()
+object NametagMinestomPlugin : SurfMinestomPlugin() {
+    override suspend fun onLoad() {
+        NametagConfig.init()
+
+        registerLuckPermsListeners()
+        ClanHook.createListeners()
+        ContentCreatorHook.registerListener()
+    }
+
+    override suspend fun onEnable() {
+        NametagListener.register(eventNode)
     }
 }

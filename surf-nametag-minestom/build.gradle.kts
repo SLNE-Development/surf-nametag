@@ -4,6 +4,16 @@ plugins {
     id("dev.slne.surf.api.gradle.minestom")
 }
 
+minestomPluginFile {
+    main = "dev.slne.surf.nametag.minestom.NametagMinestomPlugin"
+    authors = listOf("red")
+
+    pluginDependencies {
+        register("surf-clan-minestom")
+        register("surf-content-creator-minestom")
+    }
+}
+
 dependencies {
     api(projects.surfNametagCoreClient)
 
