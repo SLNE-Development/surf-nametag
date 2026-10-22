@@ -4,6 +4,7 @@ import dev.slne.surf.nametag.core.client.hook.LuckPermsHook
 import dev.slne.surf.nametag.paper.plugin
 import net.luckperms.api.event.node.NodeAddEvent
 import net.luckperms.api.event.node.NodeRemoveEvent
+import net.luckperms.api.event.user.UserDataRecalculateEvent
 import net.luckperms.api.model.user.User
 
 fun registerLuckPermsListeners() {
@@ -17,5 +18,9 @@ fun registerLuckPermsListeners() {
     eventBus.subscribe(plugin, NodeRemoveEvent::class.java) { event ->
         val user = event.target as? User ?: return@subscribe
         LuckPermsHook.updatePlayer(user)
+    }
+
+    eventBus.subscribe(plugin, UserDataRecalculateEvent::class.java) { event ->
+        LuckPermsHook.updatePlayer(event.user)
     }
 }
