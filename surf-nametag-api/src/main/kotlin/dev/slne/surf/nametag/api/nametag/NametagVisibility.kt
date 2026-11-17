@@ -1,4 +1,4 @@
-package dev.slne.surf.nametag.core.client.config
+package dev.slne.surf.nametag.api.nametag
 
 /**
  * When the name above a player's head is shown to a viewer.

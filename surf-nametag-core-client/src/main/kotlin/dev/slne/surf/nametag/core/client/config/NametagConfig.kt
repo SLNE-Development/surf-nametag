@@ -1,6 +1,7 @@
 package dev.slne.surf.nametag.core.client.config
 
 import dev.slne.surf.api.core.config.SpongeYmlConfigClass
+import dev.slne.surf.nametag.api.nametag.NametagVisibility
 import dev.slne.surf.nametag.core.client.platform.NametagPlatform
 import net.kyori.adventure.text.format.NamedTextColor
 import org.spongepowered.configurate.objectmapping.ConfigSerializable

@@ -4,6 +4,7 @@ import dev.slne.surf.api.core.luckperms.LuckPermsAccess
 import dev.slne.surf.api.core.luckperms.prefix
 import dev.slne.surf.api.core.minimessage.miniMessage
 import dev.slne.surf.nametag.api.nametag.Nametag
+import dev.slne.surf.nametag.api.nametag.NametagVisibility
 import dev.slne.surf.nametag.api.nametag.nametag
 import dev.slne.surf.nametag.core.client.config.NametagConfig
 import dev.slne.surf.nametag.core.client.hook.ClanHook
@@ -16,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 object NametagService {
     private val preventNametagUpdateUuids = ConcurrentHashMap.newKeySet<UUID>()
+    private val visibilityOverrides = ConcurrentHashMap<UUID, NametagVisibility>()
 
     private val clanTagSpacer by lazy { NametagPlatform.shift(4) }
 
@@ -27,6 +29,33 @@ object NametagService {
 
     fun allowUpdates(uuid: UUID) {
         preventNametagUpdateUuids.remove(uuid)
+    }
+
+    /**
+     * Shows the nametag of [uuid] with [visibility] to every viewer until [resetVisibility] or the
+     * player leaves; viewers who already see it are updated asynchronously.
+     */
+    fun overrideVisibility(uuid: UUID, visibility: NametagVisibility) {
+        if (visibilityOverrides.put(uuid, visibility) != visibility) refresh(uuid)
+    }
+
+    /**
+     * Removes the visibility override of [uuid], if any, and updates every viewer asynchronously.
+     */
+    fun resetVisibility(uuid: UUID) {
+        if (visibilityOverrides.remove(uuid) != null) refresh(uuid)
+    }
+
+    /**
+     * The config the nametag of [uuid] is rendered with: [config] with the visibility override applied.
+     */
+    fun configFor(uuid: UUID, config: NametagConfig): NametagConfig {
+        return visibilityOverrides[uuid]?.let { config.copy(nameTagVisibility = it) } ?: config
+    }
+
+    private fun refresh(uuid: UUID) {
+        val player = NametagPlatform.player(uuid) ?: return
+        NametagPlatform.launch { handleDataUpdate(player) }
     }
 
     private suspend fun clanTag(player: NametagPlayer) = if (NametagPlatform.clanAvailable) {
@@ -81,13 +110,13 @@ object NametagService {
             }
 
             val viewerName = viewer.name
-            viewer.showNametag(teamName(playerName, viewerName), playerNametag, config)
+            viewer.showNametag(teamName(playerName, viewerName), playerNametag, configFor(playerUuid, config))
 
             if (viewer.uuid != playerUuid) {
                 val viewerNametag = createNameTag(viewer, clanTag(viewer))
 
                 if (viewer.isOnline) {
-                    player.showNametag(teamName(viewerName, playerName), viewerNametag, config)
+                    player.showNametag(teamName(viewerName, playerName), viewerNametag, configFor(viewer.uuid, config))
                 }
             }
         }
@@ -107,7 +136,7 @@ object NametagService {
         viewer.showNametag(
             teamName(player.name, viewer.name),
             nameTag,
-            NametagConfig.getConfig()
+            configFor(player.uuid, NametagConfig.getConfig())
         )
     }
 
@@ -122,7 +151,7 @@ object NametagService {
             return
         }
 
-        val config = NametagConfig.getConfig()
+        val config = configFor(player.uuid, NametagConfig.getConfig())
         val playerName = player.name
 
         for (viewer in NametagPlatform.onlinePlayers()) {
@@ -148,6 +177,7 @@ object NametagService {
         }
 
         allowUpdates(player.uuid)
+        visibilityOverrides.remove(player.uuid)
     }
 
     fun handleLeave(player: NametagPlayer, viewer: NametagPlayer) {
