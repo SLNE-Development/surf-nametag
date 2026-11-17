@@ -1,7 +1,7 @@
 package dev.slne.surf.nametag.minestom.platform
 
+import dev.slne.surf.nametag.api.nametag.NametagVisibility
 import dev.slne.surf.nametag.core.client.config.NametagCollisionRule
-import dev.slne.surf.nametag.core.client.config.NametagVisibility
 import net.kyori.adventure.text.format.NamedTextColor
 import net.minestom.server.color.TeamColor
 import net.minestom.server.network.packet.server.play.TeamsPacket

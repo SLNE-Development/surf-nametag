@@ -2,6 +2,7 @@ package dev.slne.surf.nametag.core.client.api
 
 import com.google.auto.service.AutoService
 import dev.slne.surf.nametag.api.SurfNametagApi
+import dev.slne.surf.nametag.api.nametag.NametagVisibility
 import dev.slne.surf.nametag.core.client.service.NametagService
 import net.kyori.adventure.util.Services
 import java.util.*
@@ -16,5 +17,13 @@ class SurfNametagApiImpl : SurfNametagApi, Services.Fallback {
     override fun allowNametagUpdate(playerUuid: UUID): Boolean {
         NametagService.allowUpdates(playerUuid)
         return true
+    }
+
+    override fun setNametagVisibility(playerUuid: UUID, visibility: NametagVisibility) {
+        NametagService.overrideVisibility(playerUuid, visibility)
+    }
+
+    override fun resetNametagVisibility(playerUuid: UUID) {
+        NametagService.resetVisibility(playerUuid)
     }
 }
